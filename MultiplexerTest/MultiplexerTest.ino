@@ -54,7 +54,7 @@ void setup() {
     pinMode(MUX_S1, OUTPUT);     
     pinMode(MUX_S2, OUTPUT);  
     pinMode(MUX_S3, OUTPUT);  
-
+/*
     pinMode(REL1, OUTPUT);
     pinMode(REL2, OUTPUT);     
     pinMode(REL3, OUTPUT);  
@@ -64,7 +64,7 @@ void setup() {
     digitalWrite(REL2, HIGH);
     digitalWrite(REL3, HIGH);
     digitalWrite(REL4, HIGH);
-
+*/
     Serial.begin(115200);
     Serial.setDebugOutput(true);
 
@@ -79,17 +79,26 @@ void setup() {
     }
 }
 
+void loopx() { // run over and over  
+    delay(500);
+    changeMUXC0();
+    int value = analogRead(A0);
+    double v = 4.2/1024*value;
+    Serial.printf("raw value from A0: %d at C%d calculated: %f\n",value,0,v);           
+}
+
 void loop() { // run over and over  
-  for(int i=0; i<16;i++){
+  for(int i=0; i<4;i++){
+    delay(1000);
     changeMux(i);
     int value = analogRead(A0);
     if(value>10)
     {
-      Serial.printf("raw value from A0: %d at C%d\n",value,i);     
-      switchRelais(i);
+      double v = 4.2/1024*value;
+      Serial.printf("raw value from A0: %d at C%d calculated: %f\n",value,i,v);           
+      //switchRelais(i);
     }
-  }
-  delay(250);  
+  }  
 }
 
 void switchRelais(int relNumber)
@@ -105,6 +114,14 @@ void switchRelais(int relNumber)
 
 }
 
+
+void changeMUXC0(){
+  digitalWrite(MUX_S0, LOW);
+  digitalWrite(MUX_S1, LOW);
+  digitalWrite(MUX_S2, LOW);
+  digitalWrite(MUX_S3, LOW);
+  delay(10);
+}
 
 void changeMux(byte channelNumber){  
   digitalWrite(MUX_S0, (channelNumber & 0x01)==0?LOW:HIGH);
