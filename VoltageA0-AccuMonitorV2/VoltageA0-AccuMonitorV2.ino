@@ -26,7 +26,7 @@
 #include "WIFI-credentials.h"
 
 
-#define DHTPIN D6       // what digital pin the DHT22 is connected to
+//#define DHTPIN D8       // what digital pin the DHT22 is connected to
 
 // MUX address lines 
 #define MUX_S0 D1
@@ -38,7 +38,7 @@
 #define REL1 D5
 #define REL2 D6
 #define REL3 D7
-#define REL4 D8
+//#define REL4 D8 //D8 is used for DHT
 
 
 // defines for analog input channels
@@ -63,7 +63,7 @@
 
 //DHTesp dht;
 
-const float factor = 16.5/783;
+//const float factor = 16.5/783;
 
 const float factorOne = 3.85/944;
 const float factorTwo = 7.7/905;
@@ -103,16 +103,13 @@ void setup() {
     pinMode(REL1, OUTPUT);
     pinMode(REL2, OUTPUT);     
     pinMode(REL3, OUTPUT);  
-    pinMode(REL4, OUTPUT);  
+//    pinMode(REL4, OUTPUT);  
 
     digitalWrite(REL1, HIGH);
     digitalWrite(REL2, HIGH);
     digitalWrite(REL3, HIGH);
-    digitalWrite(REL4, HIGH);
-
-
-
-/*    
+//    digitalWrite(REL4, HIGH);
+/*
   // read temp / hum
   dht.setup(DHTPIN, DHTesp::AM2302);
   TempAndHumidity newValues = dht.getTempAndHumidity();
@@ -129,13 +126,12 @@ void setup() {
     } else {
       putItemValue("ESP8266Logger32",String("AM:Temp Prob. 2"));
     }    
-  }
+  }  
 */
-
-
-
   //read voltage
   monitorVoltage(); 
+  //checkRelais();
+
   unsigned long ts = millis();
   putItemValue("ESP8266TS3",String(ts));  
   putItemValue("ESP8266Logger",String("AM:ZZzz.."));  
@@ -143,6 +139,30 @@ void setup() {
 }
 
 void loop() {  
+}
+
+void checkRelais(){
+  String STATE_ON = String("ON");
+  String REL_STATE = getItemValue("ESP8266_REL1");
+  if(STATE_ON == REL_STATE){
+    digitalWrite(REL1, LOW);
+  }else{
+    digitalWrite(REL1, HIGH);
+  }
+  
+  REL_STATE = getItemValue("ESP8266_REL2");
+  if( STATE_ON == REL_STATE){
+    digitalWrite(REL2, LOW);
+  }else{
+    digitalWrite(REL2, HIGH);
+  }
+  
+  REL_STATE = getItemValue("ESP8266_REL3");
+  if(STATE_ON == REL_STATE){
+    digitalWrite(REL3, LOW);
+  }else{
+    digitalWrite(REL3, HIGH);
+  }
 }
 
 void monitorVoltage(){
@@ -185,12 +205,41 @@ int readVoltage(int channel){
 }
 
 
-void putItemValue(String itemName, String itemValue)
-{
+void putItemValue(String itemName, String itemValue){
   String url = "http://192.168.178.9:8080/rest/items/" + itemName + "/state";
   HTTPClient http;
   http.begin(url); //HTTP
   int httpCode = http.PUT(itemValue);
+  http.end();
+}
+
+String getItemValue(String itemName){
+  String url = "http://192.168.178.9:8080/rest/items/" + itemName + "/state";
+  HTTPClient http;
+  http.begin(url); //HTTP
+  int httpCode = http.GET();
+  String response=http.getString();
+  String dbgMessage = "getItemValue("+itemName+"): response code "+httpCode+", response '"+response+"'\n";
+  Serial.printf(string2char(dbgMessage)); 
+  http.end();
+  return response;
+}
+
+char* string2char(String command){
+  if(command.length()!=0){
+    char *p = const_cast<char*>(command.c_str());
+    return p;
+  }
+}
+
+void switchRelais(int relNumber){
+  if(relNumber==0)  {
+    Serial.printf("setting R1 to LOW...\n");
+    digitalWrite(REL1, LOW);  
+    delay(10000);
+    Serial.printf("setting R1 to HIGH...\n");
+    digitalWrite(REL1, HIGH);  
+  }
 }
 
 void changeMUXC0(){
