@@ -70,6 +70,10 @@ const float factorTwo = 7.7/905;
 const float factorThree = 11.55/876;
 const float factorAll = 15.4/859;
 
+bool charging;
+const String STATE_ON = String("ON");
+const int delayInSeconds = 60;
+
 ESP8266WiFiMulti WiFiMulti;
 
 void setup() {  
@@ -128,26 +132,34 @@ void setup() {
     }    
   }  
 */
-  //read voltage
-  monitorVoltage(); 
-  //checkRelais();
-
-  unsigned long ts = millis();
-  putItemValue("ESP8266TS3",String(ts));  
-  putItemValue("ESP8266Logger",String("AM:ZZzz.."));  
-  ESP.deepSleep(60e6); // 60 seconds
+ charging = false;
 }
 
 void loop() {  
+  //read voltage
+  monitorVoltage(); 
+  checkRelais();
+  unsigned long ts = millis();
+  putItemValue("ESP8266TS3",String(ts));  
+
+  if (charging){
+    putItemValue("ESP8266Logger",String("AM: Zz..."));
+    delay(delayInSeconds*1000);
+  }
+  else{
+    putItemValue("ESP8266Logger",String("AM: ZZZzzz.."));
+    ESP.deepSleep(delayInSeconds*1e6);
+  }
 }
 
-void checkRelais(){
-  String STATE_ON = String("ON");
+void checkRelais(){  
   String REL_STATE = getItemValue("ESP8266_REL1");
   if(STATE_ON == REL_STATE){
     digitalWrite(REL1, LOW);
+    charging = true;
   }else{
     digitalWrite(REL1, HIGH);
+    charging = false;
   }
   
   REL_STATE = getItemValue("ESP8266_REL2");
