@@ -4,7 +4,7 @@
 #include <ESP8266HTTPClient.h>
 #include <SoftwareSerial.h>
 
-//#include "DHTesp.h"
+#include "DHTesp.h"
 
 #define D0  16
 #define D1  5
@@ -26,7 +26,7 @@
 #include "WIFI-credentials.h"
 
 
-//#define DHTPIN D8       // what digital pin the DHT22 is connected to
+#define DHTPIN D6       // what digital pin the DHT22 is connected to
 
 // MUX address lines 
 #define MUX_S0 D1
@@ -35,10 +35,14 @@
 #define MUX_S3 D4
 
 // RELAIES 
+
 #define REL1 D5
+
+/*
 #define REL2 D6
 #define REL3 D7
-//#define REL4 D8 //D8 is used for DHT
+#define REL4 D8 
+*/
 
 
 // defines for analog input channels
@@ -61,7 +65,7 @@
 
 #define ANALOG_READ_COUNT 3
 
-//DHTesp dht;
+DHTesp dht;
 
 //const float factor = 16.5/783;
 
@@ -105,17 +109,43 @@ void setup() {
     pinMode(MUX_S3, OUTPUT);  
 
     pinMode(REL1, OUTPUT);
-    pinMode(REL2, OUTPUT);     
-    pinMode(REL3, OUTPUT);  
+//    pinMode(REL2, OUTPUT);     
+//    pinMode(REL3, OUTPUT);  
 //    pinMode(REL4, OUTPUT);  
 
     digitalWrite(REL1, HIGH);
-    digitalWrite(REL2, HIGH);
-    digitalWrite(REL3, HIGH);
+//    digitalWrite(REL2, HIGH);
+//    digitalWrite(REL3, HIGH);
 //    digitalWrite(REL4, HIGH);
-/*
+
   // read temp / hum
   dht.setup(DHTPIN, DHTesp::AM2302);
+
+ charging = false;
+}
+
+void loop() {  
+  putItemValue("ESP8266Logger32",String("..."));
+  //read voltage
+  monitorVoltage(); 
+  checkRelais();
+  readTemp();
+  unsigned long ts = millis();
+  putItemValue("ESP8266TS3",String(ts));  
+
+  putItemValue("ESP8266Logger32",String("---"));
+  if (charging){
+    putItemValue("ESP8266Logger",String("AM: Zz..."));
+    delay(delayInSeconds*1000);
+  }
+  else{
+    putItemValue("ESP8266Logger",String("AM: ZZZzzz.."));
+    ESP.deepSleep(delayInSeconds*1e6);
+  }
+}
+
+void readTemp(){
+  putItemValue("ESP8266Logger32",String("readTemp"));
   TempAndHumidity newValues = dht.getTempAndHumidity();
   if (dht.getStatus() == 0) {
     putItemValue("ESP8266Humidity3",String(newValues.humidity));
@@ -131,28 +161,10 @@ void setup() {
       putItemValue("ESP8266Logger32",String("AM:Temp Prob. 2"));
     }    
   }  
-*/
- charging = false;
-}
-
-void loop() {  
-  //read voltage
-  monitorVoltage(); 
-  checkRelais();
-  unsigned long ts = millis();
-  putItemValue("ESP8266TS3",String(ts));  
-
-  if (charging){
-    putItemValue("ESP8266Logger",String("AM: Zz..."));
-    delay(delayInSeconds*1000);
-  }
-  else{
-    putItemValue("ESP8266Logger",String("AM: ZZZzzz.."));
-    ESP.deepSleep(delayInSeconds*1e6);
-  }
 }
 
 void checkRelais(){  
+  putItemValue("ESP8266Logger32",String("checkRelais"));
   String REL_STATE = getItemValue("ESP8266_REL1");
   if(STATE_ON == REL_STATE){
     digitalWrite(REL1, LOW);
@@ -160,20 +172,6 @@ void checkRelais(){
   }else{
     digitalWrite(REL1, HIGH);
     charging = false;
-  }
-  
-  REL_STATE = getItemValue("ESP8266_REL2");
-  if( STATE_ON == REL_STATE){
-    digitalWrite(REL2, LOW);
-  }else{
-    digitalWrite(REL2, HIGH);
-  }
-  
-  REL_STATE = getItemValue("ESP8266_REL3");
-  if(STATE_ON == REL_STATE){
-    digitalWrite(REL3, LOW);
-  }else{
-    digitalWrite(REL3, HIGH);
   }
 }
 
