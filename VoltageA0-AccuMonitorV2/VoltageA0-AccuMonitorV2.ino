@@ -37,10 +37,10 @@
 // RELAIES 
 
 #define REL1 D5
+#define REL2 D7
 
 /*
 #define REL2 D6
-#define REL3 D7
 #define REL4 D8 
 */
 
@@ -75,6 +75,7 @@ const float factorThree = 11.55/876;
 const float factorAll = 15.4/859;
 
 bool charging;
+bool ongrid;
 const String STATE_ON = String("ON");
 const int delayInSeconds = 60;
 
@@ -109,12 +110,12 @@ void setup() {
     pinMode(MUX_S3, OUTPUT);  
 
     pinMode(REL1, OUTPUT);
-//    pinMode(REL2, OUTPUT);     
+    pinMode(REL2, OUTPUT);     
 //    pinMode(REL3, OUTPUT);  
 //    pinMode(REL4, OUTPUT);  
 
     digitalWrite(REL1, HIGH);
-//    digitalWrite(REL2, HIGH);
+    digitalWrite(REL2, HIGH);
 //    digitalWrite(REL3, HIGH);
 //    digitalWrite(REL4, HIGH);
 
@@ -122,6 +123,7 @@ void setup() {
   dht.setup(DHTPIN, DHTesp::AM2302);
 
  charging = false;
+ ongrid = false;
 }
 
 void loop() {  
@@ -134,7 +136,7 @@ void loop() {
   putItemValue("ESP8266TS3",String(ts));  
 
   putItemValue("ESP8266Logger32",String("---"));
-  if (charging){
+  if (charging || ongrid){
     putItemValue("ESP8266Logger",String("AM: Zz..."));
     delay(delayInSeconds*1000);
   }
@@ -172,6 +174,14 @@ void checkRelais(){
   }else{
     digitalWrite(REL1, HIGH);
     charging = false;
+  }
+  REL_STATE = getItemValue("ESP8266_REL2");
+  if(STATE_ON == REL_STATE){
+    digitalWrite(REL2, LOW);
+    ongrid = true;
+  }else{
+    digitalWrite(REL2, HIGH);
+    ongrid = false;
   }
 }
 
