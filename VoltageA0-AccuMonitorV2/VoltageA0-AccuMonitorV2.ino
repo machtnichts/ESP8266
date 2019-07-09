@@ -114,7 +114,7 @@ void setup() {
 //    pinMode(REL3, OUTPUT);  
 //    pinMode(REL4, OUTPUT);  
 
-    digitalWrite(REL1, HIGH);
+    digitalWrite(REL1, LOW);
     digitalWrite(REL2, HIGH);
 //    digitalWrite(REL3, HIGH);
 //    digitalWrite(REL4, HIGH);
@@ -169,10 +169,10 @@ void checkRelais(){
   putItemValue("ESP8266Logger32",String("checkRelais"));
   String REL_STATE = getItemValue("ESP8266_REL1");
   if(STATE_ON == REL_STATE){
-    digitalWrite(REL1, LOW);
+    digitalWrite(REL1, HIGH);
     charging = true;
   }else{
-    digitalWrite(REL1, HIGH);
+    digitalWrite(REL1, LOW);
     charging = false;
   }
   REL_STATE = getItemValue("ESP8266_REL2");
@@ -249,16 +249,6 @@ char* string2char(String command){
   if(command.length()!=0){
     char *p = const_cast<char*>(command.c_str());
     return p;
-  }
-}
-
-void switchRelais(int relNumber){
-  if(relNumber==0)  {
-    Serial.printf("setting R1 to LOW...\n");
-    digitalWrite(REL1, LOW);  
-    delay(10000);
-    Serial.printf("setting R1 to HIGH...\n");
-    digitalWrite(REL1, HIGH);  
   }
 }
 
