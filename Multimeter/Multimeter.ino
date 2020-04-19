@@ -134,11 +134,14 @@ void loop() {
 void monitorCO2(){
   powerOn();
   log2("waiting 120 sec...");
-  delay(120*1000);
+  for(uint8_t t = 24; t > 0; t--) {
+    delay(5000);
+    log2(String(t));
+  }
   log2("reading values...");
   putItemValue("MM_D5",String(readCO2PWM(PWM1)));
   putItemValue("MM_D6",String(readCO2PWM(PWM2)));
-  putItemValue("MM_D7",String(readCO2PWM(PWM3)));
+  //putItemValue("MM_D7",String(readCO2PWM(PWM3)));
   powerOff();
 }
 
@@ -211,5 +214,3 @@ int readCO2PWM(uint8_t pin)
   } while (th == 0);
   return ppm;
 }
-
-
