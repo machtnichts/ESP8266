@@ -51,7 +51,12 @@
 #define MAX_CHANNEL_COUNT 16
 #define ANALOG_READ_COUNT 5
 
-const int delayIn100MS = 5;
+#define PWM1 D5
+#define PWM2 D6
+#define PWM3 D7
+#define CO2_PWR D8
+
+const int delayIn100MS = 100;
 
 const float c33v = 3.22;
 
@@ -107,13 +112,44 @@ void setup() {
   pinMode(MUX_S1, OUTPUT);
   pinMode(MUX_S2, OUTPUT);
   pinMode(MUX_S3, OUTPUT);
+
+  
+  pinMode(PWM1, INPUT);
+  pinMode(PWM2, INPUT);
+  pinMode(PWM3, INPUT);
+  pinMode(CO2_PWR, OUTPUT);
+  digitalWrite(CO2_PWR, LOW);
 }
 
 void loop() {  
+  log2("Starting...");
   Serial.println("--------------------------");
   monitorVoltage(); 
+  monitorCO2();
   Serial.println("--------------------------");
+  log2("Sleeping...");
   delay(delayIn100MS*100);
+}
+
+void monitorCO2(){
+  powerOn();
+  log2("waiting 120 sec...");
+  delay(120*1000);
+  log2("reading values...");
+  putItemValue("MM_D5",String(readCO2PWM(PWM1)));
+  putItemValue("MM_D6",String(readCO2PWM(PWM2)));
+  putItemValue("MM_D7",String(readCO2PWM(PWM3)));
+  powerOff();
+}
+
+void powerOn(){
+  log1("switch power on...");
+  digitalWrite(CO2_PWR, HIGH);
+}
+
+void powerOff(){  
+  digitalWrite(CO2_PWR, LOW);
+  log1("power switched off");
 }
 
 void monitorVoltage(){  
@@ -156,3 +192,24 @@ void changeMux(byte channelNumber){
   digitalWrite(MUX_S3, (channelNumber & 0x08)==0?LOW:HIGH);
   delay(20);
 }
+
+void log1(String msg){
+  putItemValue("MM_LOG1",msg);
+}
+
+void log2(String msg){
+  putItemValue("MM_LOG2",msg);
+}
+
+int readCO2PWM(uint8_t pin)
+{ 
+  unsigned long th, tl, ppm = 0;
+  do {
+    th = pulseIn(pin, HIGH, 1004000) / 1000;
+    tl = 1004 - th;
+    ppm = 5000 * (th-2)/(th+tl-4);
+  } while (th == 0);
+  return ppm;
+}
+
+
