@@ -1,9 +1,10 @@
 
 #include <ESP8266WiFi.h>
-#include <ESP8266WiFiMulti.h>
+#include <ESP8266mDNS.h>
+#include <WiFiUdp.h>
 #include <ESP8266HTTPClient.h>
 #include <SoftwareSerial.h>
-
+#include <ArduinoOTA.h>
 
 /*
  * content of WIFI-credentials.h
@@ -12,7 +13,6 @@
 */
 #include "WIFI-credentials.h"
 
-ESP8266WiFiMulti WiFiMulti;
 
 void setup() {  
     Serial.begin(115200);
@@ -27,15 +27,28 @@ void setup() {
     } 
   Serial.flush();
   WiFi.mode(WIFI_STA);
-  WiFiMulti.addAP(WIFI_NAME,WIFI_PASSWORD);    
-  while(WiFiMulti.run() != WL_CONNECTED)
+  WiFi.mode(WIFI_STA);
+  WiFi.begin("nixda fz", WIFI_PASSWORD); 
+  while(WiFi.waitForConnectResult() != WL_CONNECTED)
     delay(10);  
   Serial.printf("[SETUP] WIFI done.");
+
+  ArduinoOTA.setHostname("myesp8266-GZ-000");
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+  });
+  ArduinoOTA.begin();
+  Serial.println("Ready");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
 }
 
 void loop() {  
-  putItemValue("ESP8266_GAS_ZHLR_IMPULSE",String("ON"));
-  ESP.deepSleep(86400000000); //24*60*60*1000000
+
+  ArduinoOTA.handle();
+  delay(1000);
+  //putItemValue("ESP8266_GAS_ZHLR_IMPULSE",String("ON"));
+  //ESP.deepSleep(86400000000); //24*60*60*1000000
 }
 
 void putItemValue(String itemName, String itemValue){
