@@ -146,13 +146,13 @@ void monitorCO2(){
 }
 
 void powerOn(){
-  log1("switch power on...");
+  log1("power on");
   digitalWrite(CO2_PWR, HIGH);
 }
 
 void powerOff(){  
   digitalWrite(CO2_PWR, LOW);
-  log1("power switched off");
+  log1("power off");
 }
 
 void monitorVoltage(){  
