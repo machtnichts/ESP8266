@@ -47,16 +47,8 @@
 #define C14 0x0E
 #define C15 0x0F
 
-
 #define MAX_CHANNEL_COUNT 16
 #define ANALOG_READ_COUNT 5
-
-#define PWM1 D5
-#define PWM2 D6
-#define PWM3 D7
-#define CO2_PWR D8
-
-const int delayIn100MS = 100;
 
 const float c33v = 3.22;
 
@@ -92,77 +84,27 @@ const String itemNames[] = {
 ESP8266WiFiMulti WiFiMulti;
 
 void setup() {  
-  Serial.begin(115200);
-  Serial.setDebugOutput(true);
-  Serial.println();
-  for(uint8_t t = 4; t > 0; t--) {
-    Serial.printf("[SETUP] WAIT %d...\n", t);
-    Serial.flush();
-    delay(1000);
-  }
-  Serial.flush();
-
   WiFi.mode(WIFI_STA);
   WiFiMulti.addAP(WIFI_NAME,WIFI_PASSWORD);    
   while(WiFiMulti.run() != WL_CONNECTED)
     delay(10);  
-  Serial.printf("[SETUP] WIFI done.");
   
   pinMode(MUX_S0, OUTPUT);
   pinMode(MUX_S1, OUTPUT);
   pinMode(MUX_S2, OUTPUT);
-  pinMode(MUX_S3, OUTPUT);
-
-  
-  pinMode(PWM1, INPUT);
-  pinMode(PWM2, INPUT);
-  pinMode(PWM3, INPUT);
-  pinMode(CO2_PWR, OUTPUT);
-  digitalWrite(CO2_PWR, LOW);
+  pinMode(MUX_S3, OUTPUT);  
 }
 
-void loop() {  
-  log2("Starting...");
-  Serial.println("--------------------------");
-  monitorVoltage(); 
-  monitorCO2();
-  Serial.println("--------------------------");
-  log2("Sleeping...");
-  delay(delayIn100MS*100);
+void loop() {    
+  monitorVoltage();   
+  delay(250);
 }
-
-void monitorCO2(){
-  powerOn();
-  log2("waiting 120 sec...");
-  for(uint8_t t = 24; t > 0; t--) {
-    delay(5000);
-    log2(String(t));
-  }
-  log2("reading values...");
-  putItemValue("MM_D5",String(readCO2PWM(PWM1)));
-  putItemValue("MM_D6",String(readCO2PWM(PWM2)));
-  //putItemValue("MM_D7",String(readCO2PWM(PWM3)));
-  powerOff();
-}
-
-void powerOn(){
-  log1("power on");
-  digitalWrite(CO2_PWR, HIGH);
-}
-
-void powerOff(){  
-  digitalWrite(CO2_PWR, LOW);
-  log1("power off");
-}
-
 void monitorVoltage(){  
   int correction = readVoltageRaw(15);
   for(uint8_t i = 0; i<MAX_CHANNEL_COUNT; i++) {  
     int vRaw = readVoltageRaw(i);    
     vRaw = vRaw - correction;
-    double vCalc = factors[i]*vRaw;
-    Serial.printf("voltage[%2d]: raw %d, calculated: %f\n",i,vRaw,vCalc);
-    
+    double vCalc = factors[i]*vRaw;   
     putItemValue(itemNames[i],String(vCalc));
   } 
   int aRaw = readVoltageRaw(13);

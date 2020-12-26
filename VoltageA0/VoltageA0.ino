@@ -21,19 +21,16 @@ const float factor = 4.16/591;
 
 ESP8266WiFiMulti WiFiMulti;
 
-void setup() {
+void setup() {   
   // put your setup code here, to run once:
   Serial.begin(115200);
   WiFi.mode(WIFI_STA);
   WiFiMulti.addAP(WIFI_NAME,WIFI_PASSWORD);
-  
-  //while(!Serial) { }  
-  dht.setup(DHTPIN, DHTesp::AM2302);
   while(WiFiMulti.run() != WL_CONNECTED)
-    delay(10);  
-
+    delay(10);      
+  dht.setup(DHTPIN, DHTesp::AM2302);
+  
   putItemValue("ESP8266Logger",String("-/-\-"));    
-  Serial.println("configured WIFI.");  
   TempAndHumidity newValues = dht.getTempAndHumidity();
   if (dht.getStatus() == 0) {
     putItemValue("ESP8266Humidity2",String(newValues.humidity));
