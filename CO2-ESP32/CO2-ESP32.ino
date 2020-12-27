@@ -6,6 +6,7 @@
 
 #define PWMPIN 25
 #define DHTPIN 23
+#define LEDPIN 2
 
 DHTesp dht;
 
@@ -13,10 +14,10 @@ unsigned long th, tl,ppm, ppm2, ppm3, p1, p2, tpwm = 0;
 
 const uint32_t SLEEP_DURATION = 20 * 1000000; // µs
 
-const String vCO2 = "ESP32CO22";
-const String vHum = "ESP32Humidity2";
-const String vTemp = "ESP32Temperature2";
-const String vLog = "ESP32Logger2"; 
+const String vCO2 = "ESP32CO23";
+const String vHum = "ESP32Humidity3";
+const String vTemp = "ESP32Temperature3";
+const String vLog = "ESP32Logger3"; 
 
 
 void lightSleep() {
@@ -26,14 +27,14 @@ void lightSleep() {
 }
 
 void connectToNetwork() {
-  WiFi.begin( WIFI_NAME, WIFI_PASSWORD);
- 
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.println("Establishing connection to WiFi..");
+  if(WiFi.status() != WL_CONNECTED){  
+    WiFi.begin( WIFI_NAME, WIFI_PASSWORD); 
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(1000);
+      Serial.println("Establishing connection to WiFi..");
+    } 
+    Serial.println("Connected to network"); 
   }
- 
-  Serial.println("Connected to network"); 
 }
 
 int readCO2PWM(){ 
@@ -57,6 +58,15 @@ void log(String message){
   putItemValue(vLog,message);
 }
 
+void ledOn(){
+  digitalWrite(LEDPIN, LOW);                                   
+}
+
+void ledOff(){
+  digitalWrite(LEDPIN, HIGH);                                   
+}
+
+
 void setup() {
   Serial.begin(115200);    
   Serial.println();
@@ -71,10 +81,13 @@ void setup() {
     
   connectToNetwork();
   pinMode(PWMPIN, INPUT);
+  pinMode(LEDPIN, OUTPUT);
   dht.setup(DHTPIN, DHTesp::AM2302);    
 }
 
-void loop() { // run over and over  
+void loop() { // run over and over 
+  ledOn(); 
+  connectToNetwork();
   log("awaken");
   int ppmCO2 = readCO2PWM();
   putItemValue(vCO2,String(ppmCO2));
@@ -87,5 +100,10 @@ void loop() { // run over and over
     log("DHT READ FAILED...");     
   
   log("zzZZ");
+  ledOff();
   lightSleep();
 }
+
+
+
+
