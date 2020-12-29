@@ -3,21 +3,26 @@
 #include "WIFI-credentials.h"
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <esp_wifi.h>
+#include <esp_bt.h>
 
 #define PWMPIN 25
 #define DHTPIN 23
 #define LEDPIN 2
 
+const String FIRMWARE_VERSION = "v1.04ds";
+
 DHTesp dht;
 
 unsigned long th, tl,ppm, ppm2, ppm3, p1, p2, tpwm = 0;
 
-const uint32_t SLEEP_DURATION = 20 * 1000000; // µs
+const uint32_t SLEEP_DURATION = 30 * 1000000; // µs
 
-const String vCO2 = "ESP32CO23";
-const String vHum = "ESP32Humidity3";
-const String vTemp = "ESP32Temperature3";
-const String vLog = "ESP32Logger3"; 
+const String vCO2 = "ESP32CO21";
+const String vHum = "ESP32Humidity1";
+const String vTemp = "ESP32Temperature1";
+const String vLog = "ESP32Logger1";
+
 
 
 void lightSleep() {
@@ -26,28 +31,38 @@ void lightSleep() {
     esp_light_sleep_start();
 }
 
+void deepSleep() {
+    esp_sleep_enable_timer_wakeup(SLEEP_DURATION);
+    esp_wifi_stop();
+    esp_bt_controller_disable();
+    delay(100);
+    esp_deep_sleep_start();
+}
+
 void connectToNetwork() {
-  if(WiFi.status() != WL_CONNECTED){  
-    WiFi.begin( WIFI_NAME, WIFI_PASSWORD); 
+  if(WiFi.status() != WL_CONNECTED){
+    WiFi.begin( WIFI_NAME, WIFI_PASSWORD);
     while (WiFi.status() != WL_CONNECTED) {
-      delay(1000);
       Serial.println("Establishing connection to WiFi..");
-    } 
-    Serial.println("Connected to network"); 
+      delay(1000);      
+    }
+    Serial.println("Connected to network");
   }
 }
 
-int readCO2PWM(){ 
+int readCO2PWM(){  
   int ppm = -1;
-  do {
+  ledOn();
+  do {    
     th = pulseIn(PWMPIN, HIGH, 1004000) / 1000;
     tl = 1004 - th;
-    ppm = 5000 * (th-2)/(th+tl-4);
+    ppm = 5000 * (th-2)/(th+tl-4);    
   } while (th == 0);
+  ledOff();
   return ppm;
 }
 
-void putItemValue(String itemName, String itemValue){  
+void putItemValue(String itemName, String itemValue){
   String url = "http://192.168.178.9:8080/rest/items/" + itemName + "/state";
   HTTPClient http;
   http.begin(url); //HTTP
@@ -59,16 +74,15 @@ void log(String message){
 }
 
 void ledOn(){
-  digitalWrite(LEDPIN, LOW);                                   
+  digitalWrite(LEDPIN, LOW);
 }
 
 void ledOff(){
-  digitalWrite(LEDPIN, HIGH);                                   
+  digitalWrite(LEDPIN, HIGH);
 }
 
-
 void setup() {
-  Serial.begin(115200);    
+  Serial.begin(115200);
   Serial.println();
   Serial.println();
   Serial.println();
@@ -82,16 +96,22 @@ void setup() {
   connectToNetwork();
   pinMode(PWMPIN, INPUT);
   pinMode(LEDPIN, OUTPUT);
-  dht.setup(DHTPIN, DHTesp::AM2302);    
+  dht.setup(DHTPIN, DHTesp::AM2302);   
+
+  sendValues();
+  deepSleep();  
 }
 
-void loop() { // run over and over 
+void sendValues(){
   ledOn(); 
   connectToNetwork();
+  Serial.println("Connected.");
   log("awaken");
+  Serial.println("Reading CO2");
   int ppmCO2 = readCO2PWM();
   putItemValue(vCO2,String(ppmCO2));
   log("reading DHT");
+  Serial.println("Reading DHT");
   TempAndHumidity newValues = dht.getTempAndHumidity();
   if (dht.getStatus() == 0) {
     putItemValue(vHum,String(newValues.humidity));
@@ -99,11 +119,13 @@ void loop() { // run over and over
   } else
     log("DHT READ FAILED...");     
   
-  log("zzZZ");
+  log("zzZZ ("+FIRMWARE_VERSION+")");
   ledOff();
-  lightSleep();
+  Serial.println("Sleeping");  
 }
 
 
-
-
+void loop() { // run over and over 
+ // sendValues();  
+ // lightSleep();
+}
