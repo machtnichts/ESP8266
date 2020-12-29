@@ -5,13 +5,14 @@
 #include <HTTPClient.h>
 #include <esp_wifi.h>
 #include <esp_bt.h>
+#include <esp_task_wdt.h>
 
 #define PWMPIN 25
 #define DHTPIN 23
 
 #define BOARD_NUMBER "1"
 
-const String FIRMWARE_VERSION = "v1.06dslp";
+const String FIRMWARE_VERSION = "v1.07dslp";
 
 DHTesp dht;
 
@@ -28,10 +29,8 @@ void connectToNetwork() {
   if(WiFi.status() != WL_CONNECTED){
     WiFi.begin( WIFI_NAME, WIFI_PASSWORD);
     while (WiFi.status() != WL_CONNECTED) {
-      //Serial.println("Establishing connection to WiFi..");
-      delay(1000);      
+      delay(250);      
     }
-    //Serial.println("Connected to network");
   }
 }
 
@@ -75,38 +74,26 @@ void ledOff(){
 }
 
 void setup() {
-  //Serial.begin(115200);
-  //Serial.println();
-  //Serial.println();
-  //Serial.println();
-
-  for(uint8_t t = 4; t > 0; t--) {
-    //Serial.printf("[SETUP] WAIT %d...\n", t);
-    //Serial.flush();
-    //delay(1000);
-  }
-  
-  connectToNetwork();
+  esp_task_wdt_init(5,true);
+  esp_task_wdt_add(NULL);
   pinMode(PWMPIN, INPUT);
-  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT);  
   dht.setup(DHTPIN, DHTesp::AM2302);
-  delay(200);
+  esp_task_wdt_reset();
   sendValues();
+  esp_task_wdt_reset();
   deepSleep();
 }
 
 void sendValues(){ 
   connectToNetwork();
-  //Serial.println("Connected.");
   log("awaken");
-  //Serial.println("Reading CO2");
   int ppmCO2 = readCO2PWM();
   if(ppmCO2>0 && ppmCO2<=5000)  
     putItemValue(vCO2,String(ppmCO2));
   else
     log("PWM READ FAILED: "+ppmCO2);
   log("reading DHT");
-  //Serial.println("Reading DHT"); 
   TempAndHumidity newValues = dht.getTempAndHumidity();
   if (dht.getStatus() == 0) {
     putItemValue(vHum,String(newValues.humidity));
@@ -115,21 +102,10 @@ void sendValues(){
     log("DHT READ FAILED...");
   
   log("zzZZ ("+FIRMWARE_VERSION+")");
-  //Serial.println("Sleeping");
 }
 
 
 void loop() {
-  //ledOn();   // turn the LED on (HIGH is the voltage level)
-  //delay(2000);                       // wait for a second
-  //sendValues();
-  //ledOff();    // turn the LED off by making the voltage LOW
-  //delay(500);                       // wait for a second
-}
-
-void loop1(){ // run over and over 
- sendValues();  
- delay(30000);
 }
 
 void deepSleep() {
@@ -139,11 +115,3 @@ void deepSleep() {
   delay(100);
   esp_deep_sleep_start();
 }
-
-/*
-void lightSleep() {
-    esp_sleep_enable_timer_wakeup(SLEEP_DURATION);
-    delay(100);
-    esp_light_sleep_start();
-}
-*/
