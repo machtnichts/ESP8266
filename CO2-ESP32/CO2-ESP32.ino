@@ -8,9 +8,8 @@
 
 #define PWMPIN 25
 #define DHTPIN 23
-#define LEDPIN 2
 
-const String FIRMWARE_VERSION = "v1.04ds";
+const String FIRMWARE_VERSION = "v1.04dlay";
 
 DHTesp dht;
 
@@ -22,22 +21,6 @@ const String vCO2 = "ESP32CO21";
 const String vHum = "ESP32Humidity1";
 const String vTemp = "ESP32Temperature1";
 const String vLog = "ESP32Logger1";
-
-
-
-void lightSleep() {
-    esp_sleep_enable_timer_wakeup(SLEEP_DURATION);
-    delay(100);
-    esp_light_sleep_start();
-}
-
-void deepSleep() {
-    esp_sleep_enable_timer_wakeup(SLEEP_DURATION);
-    esp_wifi_stop();
-    esp_bt_controller_disable();
-    delay(100);
-    esp_deep_sleep_start();
-}
 
 void connectToNetwork() {
   if(WiFi.status() != WL_CONNECTED){
@@ -56,7 +39,12 @@ int readCO2PWM(){
   do {    
     th = pulseIn(PWMPIN, HIGH, 1004000) / 1000;
     tl = 1004 - th;
-    ppm = 5000 * (th-2)/(th+tl-4);    
+    ppm = 5000 * (th-2)/(th+tl-4);
+    if(th==0){
+      ledOff();
+      delay(250);
+      ledOn();
+    }
   } while (th == 0);
   ledOff();
   return ppm;
@@ -74,11 +62,11 @@ void log(String message){
 }
 
 void ledOn(){
-  digitalWrite(LEDPIN, LOW);
+  digitalWrite(LED_BUILTIN, HIGH);  
 }
 
 void ledOff(){
-  digitalWrite(LEDPIN, HIGH);
+  digitalWrite(LED_BUILTIN, LOW); 
 }
 
 void setup() {
@@ -95,15 +83,12 @@ void setup() {
     
   connectToNetwork();
   pinMode(PWMPIN, INPUT);
-  pinMode(LEDPIN, OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT);
   dht.setup(DHTPIN, DHTesp::AM2302);   
-
-  sendValues();
-  deepSleep();  
 }
 
 void sendValues(){
-  ledOn(); 
+  //ledOn(); 
   connectToNetwork();
   Serial.println("Connected.");
   log("awaken");
@@ -111,21 +96,44 @@ void sendValues(){
   int ppmCO2 = readCO2PWM();
   putItemValue(vCO2,String(ppmCO2));
   log("reading DHT");
-  Serial.println("Reading DHT");
+  Serial.println("Reading DHT"); 
   TempAndHumidity newValues = dht.getTempAndHumidity();
   if (dht.getStatus() == 0) {
     putItemValue(vHum,String(newValues.humidity));
     putItemValue(vTemp,String(newValues.temperature));
   } else
-    log("DHT READ FAILED...");     
+    log("DHT READ FAILED...");       
   
   log("zzZZ ("+FIRMWARE_VERSION+")");
-  ledOff();
-  Serial.println("Sleeping");  
+  //ledOff();
+  Serial.println("Sleeping");
 }
 
 
-void loop() { // run over and over 
- // sendValues();  
- // lightSleep();
+void loop() {
+  //ledOn();   // turn the LED on (HIGH is the voltage level)
+  delay(2000);                       // wait for a second
+  sendValues();
+  //ledOff();    // turn the LED off by making the voltage LOW
+  delay(500);                       // wait for a second
 }
+
+void loop1(){ // run over and over 
+ sendValues();  
+ delay(30000);
+}
+/*
+void deepSleep() {
+  esp_sleep_enable_timer_wakeup(SLEEP_DURATION);
+  esp_wifi_stop();
+  esp_bt_controller_disable();
+  delay(100);
+  esp_deep_sleep_start();
+}
+
+void lightSleep() {
+    esp_sleep_enable_timer_wakeup(SLEEP_DURATION);
+    delay(100);
+    esp_light_sleep_start();
+}
+*/
