@@ -9,27 +9,29 @@
 #define PWMPIN 25
 #define DHTPIN 23
 
-const String FIRMWARE_VERSION = "v1.05dslp";
+#define BOARD_NUMBER "1"
+
+const String FIRMWARE_VERSION = "v1.06dslp";
 
 DHTesp dht;
 
 unsigned long th, tl,ppm, ppm2, ppm3, p1, p2, tpwm = 0;
 
-const uint32_t SLEEP_DURATION = 30 * 1000000; // µs
+const uint32_t SLEEP_DURATION = 60 * 1000000; // µs
 
-const String vCO2 = "ESP32CO21";
-const String vHum = "ESP32Humidity1";
-const String vTemp = "ESP32Temperature1";
-const String vLog = "ESP32Logger1";
+const String vCO2  = String("ESP32CO2")+String(BOARD_NUMBER);
+const String vHum  = String("ESP32Humidity")+String(BOARD_NUMBER);
+const String vTemp = String("ESP32Temperature")+String(BOARD_NUMBER);
+const String vLog  = String("ESP32Logger")+String(BOARD_NUMBER);
 
 void connectToNetwork() {
   if(WiFi.status() != WL_CONNECTED){
     WiFi.begin( WIFI_NAME, WIFI_PASSWORD);
     while (WiFi.status() != WL_CONNECTED) {
-      Serial.println("Establishing connection to WiFi..");
+      //Serial.println("Establishing connection to WiFi..");
       delay(1000);      
     }
-    Serial.println("Connected to network");
+    //Serial.println("Connected to network");
   }
 }
 
@@ -73,15 +75,15 @@ void ledOff(){
 }
 
 void setup() {
-  Serial.begin(115200);
-  Serial.println();
-  Serial.println();
-  Serial.println();
+  //Serial.begin(115200);
+  //Serial.println();
+  //Serial.println();
+  //Serial.println();
 
   for(uint8_t t = 4; t > 0; t--) {
-    Serial.printf("[SETUP] WAIT %d...\n", t);
-    Serial.flush();
-    delay(1000);
+    //Serial.printf("[SETUP] WAIT %d...\n", t);
+    //Serial.flush();
+    //delay(1000);
   }
   
   connectToNetwork();
@@ -95,16 +97,16 @@ void setup() {
 
 void sendValues(){ 
   connectToNetwork();
-  Serial.println("Connected.");
+  //Serial.println("Connected.");
   log("awaken");
-  Serial.println("Reading CO2");
+  //Serial.println("Reading CO2");
   int ppmCO2 = readCO2PWM();
   if(ppmCO2>0 && ppmCO2<=5000)  
     putItemValue(vCO2,String(ppmCO2));
   else
     log("PWM READ FAILED: "+ppmCO2);
   log("reading DHT");
-  Serial.println("Reading DHT"); 
+  //Serial.println("Reading DHT"); 
   TempAndHumidity newValues = dht.getTempAndHumidity();
   if (dht.getStatus() == 0) {
     putItemValue(vHum,String(newValues.humidity));
@@ -113,7 +115,7 @@ void sendValues(){
     log("DHT READ FAILED...");
   
   log("zzZZ ("+FIRMWARE_VERSION+")");
-  Serial.println("Sleeping");
+  //Serial.println("Sleeping");
 }
 
 
