@@ -9,7 +9,7 @@
 #define PWMPIN 25
 #define DHTPIN 23
 
-const String FIRMWARE_VERSION = "v1.04dlay";
+const String FIRMWARE_VERSION = "v1.05dslp";
 
 DHTesp dht;
 
@@ -35,17 +35,20 @@ void connectToNetwork() {
 
 int readCO2PWM(){  
   int ppm = -1;
+  int counter = 1000;
   ledOn();
   do {    
+    counter--;
     th = pulseIn(PWMPIN, HIGH, 1004000) / 1000;
     tl = 1004 - th;
     ppm = 5000 * (th-2)/(th+tl-4);
     if(th==0){
+      ppm=-1;
       ledOff();
       delay(250);
       ledOn();
     }
-  } while (th == 0);
+  } while (th == 0 && counter>0);
   ledOff();
   return ppm;
 }
@@ -80,21 +83,26 @@ void setup() {
     Serial.flush();
     delay(1000);
   }
-    
+  
   connectToNetwork();
   pinMode(PWMPIN, INPUT);
   pinMode(LED_BUILTIN, OUTPUT);
-  dht.setup(DHTPIN, DHTesp::AM2302);   
+  dht.setup(DHTPIN, DHTesp::AM2302);
+  delay(200);
+  sendValues();
+  deepSleep();
 }
 
-void sendValues(){
-  //ledOn(); 
+void sendValues(){ 
   connectToNetwork();
   Serial.println("Connected.");
   log("awaken");
   Serial.println("Reading CO2");
   int ppmCO2 = readCO2PWM();
-  putItemValue(vCO2,String(ppmCO2));
+  if(ppmCO2>0 && ppmCO2<=5000)  
+    putItemValue(vCO2,String(ppmCO2));
+  else
+    log("PWM READ FAILED: "+ppmCO2);
   log("reading DHT");
   Serial.println("Reading DHT"); 
   TempAndHumidity newValues = dht.getTempAndHumidity();
@@ -102,27 +110,26 @@ void sendValues(){
     putItemValue(vHum,String(newValues.humidity));
     putItemValue(vTemp,String(newValues.temperature));
   } else
-    log("DHT READ FAILED...");       
+    log("DHT READ FAILED...");
   
   log("zzZZ ("+FIRMWARE_VERSION+")");
-  //ledOff();
   Serial.println("Sleeping");
 }
 
 
 void loop() {
   //ledOn();   // turn the LED on (HIGH is the voltage level)
-  delay(2000);                       // wait for a second
-  sendValues();
+  //delay(2000);                       // wait for a second
+  //sendValues();
   //ledOff();    // turn the LED off by making the voltage LOW
-  delay(500);                       // wait for a second
+  //delay(500);                       // wait for a second
 }
 
 void loop1(){ // run over and over 
  sendValues();  
  delay(30000);
 }
-/*
+
 void deepSleep() {
   esp_sleep_enable_timer_wakeup(SLEEP_DURATION);
   esp_wifi_stop();
@@ -131,6 +138,7 @@ void deepSleep() {
   esp_deep_sleep_start();
 }
 
+/*
 void lightSleep() {
     esp_sleep_enable_timer_wakeup(SLEEP_DURATION);
     delay(100);
