@@ -190,6 +190,7 @@ void putItemValue(String itemName, String itemValue)
   String url = "http://192.168.178.9:8080/rest/items/" + itemName + "/state";
   HTTPClient http;
   http.begin(url); //HTTP
+  http.addHeader("Content-Type", "text/plain");
   int httpCode = http.PUT(itemValue);
 }
 
